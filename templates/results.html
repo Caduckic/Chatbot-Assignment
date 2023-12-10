@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+    {% extends "base.html" %}
+    {% block title %}Home Page{% endblock %}
+    {% block content %}
+        <h1>{{ name }} Weather results</h1>
+        <h2>The temperature is {{ temp }} Celsius with a wind speed of {{ wspeed }}meters/sec</h2>
+        <p>Description is {{ desc }}</p>
+    {% endblock %}
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% extends "base.html" %}
+    {% block title %}Home Page{% endblock %}
+    {% block content %}
+    <form action="#" method="post" id="travel-list">
+        <h1>{{content}}</h1>
+        <ol id="travel-locations">
+            {% for location in locations %}
+            <li>{{ location }}<button type="submit">Get Weather</button></li>
+            {% endfor %}
+        </ol>
+    </form>
+    <form action="#" method="post">
+        <input type="text" name="address">
+        <button name="manual" type="submit" value="submit">Get Weather</button>
+        {% if error is defined and error %}
+          <br><br><span class="alert alert-info">Address not recognized, please provide more specific address.</span></br>
+        {% endif %}
+    </form>
+    <script>
+        // basic javascript to set travel location li buttons values to the location name
+        // I couldn't find how I could do this in python using flask so this should work as a quick fix
+
+        // using Jquery I perform my code once the doc is ready
+        $( document ).ready(function() {
+            // I get the list by id and get all the li elements
+            let items = document.getElementById('travel-locations').getElementsByTagName('li')
+            for (let i = 0; i < items.length; i++) {
+                // inside the loop I set all the button name attribute to the li inner text while
+                // avoiding adding in the buttons own inner text
+                button = items[i].getElementsByTagName('button')
+                console.log(button[0].setAttribute('name', items[i].childNodes[0].nodeValue.trim()))
+            }
+        })
+    </script>
+    {% endblock %}
+</html>
