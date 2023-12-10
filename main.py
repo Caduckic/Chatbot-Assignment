@@ -3,6 +3,7 @@ import requests
 import googlemaps
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date
+from weather import *
 from chatterbot import ChatBot
 from chatterbot.trainers import ListTrainer, ChatterBotCorpusTrainer
 
@@ -15,6 +16,34 @@ my_bot = ChatBot(
 corpus_trainer = ChatterBotCorpusTrainer(my_bot)
 corpus_trainer.train('chatterbot.corpus.english.conversations')
 
+list_trainer = ListTrainer(my_bot)
+
+weather_talk = [
+    'Where is the hottest place?',
+    hottest_place(),
+    'Where is the coldest place?',
+    coldest_place(),
+    'Where is the windiest place?',
+    most_windy(),
+    'Where is the least windiest place?',
+    least_windy(),
+    'Where is hot?',
+    hottest_place(),
+    'Where is cold?',
+    coldest_place(),
+    'Where is windy?',
+    most_windy(),
+    'Where is not windy?',
+    least_windy(),
+    'Where is the hottest and coldest places?',
+    hottest_place() + ' and ' + coldest_place(),
+    'Where is the windiest and least windiest places?',
+    most_windy() + ' and ' + least_windy(),
+]
+
+for item in weather_talk:
+    list_trainer.train(item)
+
 # initiating the Flask application
 app = Flask(__name__)
 
@@ -24,17 +53,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 db = SQLAlchemy(app)
 
+
 class Location(db.Model):
-    #__tablename__ = 'location'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True, nullable=False)
     def __repr__(self):
         return f'<Location {self.name}>'
 
+
 class Weather(db.Model):
-    #__tablename__ = 'weather'
     id = db.Column(db.Integer, primary_key=True)
-    # Define other columns here
     date = db.Column(db.String(10))
     temp = db.Column(db.Float)
     description = db.Column(db.String(255))  # storing more here as I don't know how long these get
@@ -194,9 +222,22 @@ def results(lat, lon, name):
             resp = requests.get(url=f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API_keys["openweather"]}&units=metric')
             input_weather_data(location.name, resp.json())
             weather = Weather.query.filter_by(location_id=location.id, date=date.today().strftime('%Y-%m-%d')).first()
-            # just incase something goes wrong, we return an error page
+            # for some reason, late at night it (before 12) it stops returning the current day, this is my work around
+            # it's messy but it works for now. too bad it means I'm calling the api more here, yikes
             if not weather:
-                return '<h1>Error, could not find weatherdata</h1>'
+                resp =requests.get(
+                    url=f'{urls["openweather"]}lat={lat}&lon={lon}&appid={API_keys["openweather"]}&units=metric')
+                if resp.status_code != 200:
+                    return '<h1>Error in retrieving weather data</h1>'
+                # using the weather data we render the results
+                weather_data = resp.json()
+                return render_template(
+                    'results.html',
+                    name=name,
+                    desc=weather_data['weather'][0]['description'],
+                    temp=weather_data['main']['temp'],
+                    wspeed=weather_data['wind']['speed']
+                )
         return render_template(
             'results.html',
             name=location.name,
